@@ -9,7 +9,7 @@ invoked as root. This script should also be written such that it is as compatibl
 old versions of python as the python that the root account has access to may be much older than
 the user's python.
 """
-
+import io
 import os
 import re
 import sys
@@ -27,11 +27,11 @@ def _update_hosts(first, second, hosts_file_path=None):
     if not os.path.exists(hosts_file_path):
         original_hosts = ''
     else:
-        with open(hosts_file_path, 'rt', encoding='utf-8') as hosts_file:
+        with io.open(hosts_file_path, 'rt', encoding='utf-8') as hosts_file:
             original_hosts = hosts_file.read()
 
     # Write the hosts file to a backup file.
-    with open('%s.backup' % hosts_file_path, 'wt', encoding='utf-8') as backup_file:
+    with io.open('%s.backup' % hosts_file_path, 'wt', encoding='utf-8') as backup_file:
         backup_file.write(original_hosts)
 
     # Replace lines.
@@ -46,7 +46,7 @@ def _update_hosts(first, second, hosts_file_path=None):
     filtered_hosts.append('%s %s' % (first, second))
 
     # Write new hosts file.
-    with open(hosts_file_path, 'wt', encoding='utf-8') as hosts_file:
+    with io.open(hosts_file_path, 'wt', encoding='utf-8') as hosts_file:
         hosts_file.write(os.linesep.join(filtered_hosts) + os.linesep)
 
 
