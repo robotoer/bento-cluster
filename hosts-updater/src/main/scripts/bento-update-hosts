@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# -*- mode: python -*-
+# (c) Copyright 2014 WibiData, Inc.
+"""Support script for the bento-cluster.
+
+Edits a user's hosts file. This script is separate from the rest of bento-cluster so that it can be
+invoked as root. This script should also be written such that it is as compatible as possible with
+old versions of python as the python that the root account has access to may be much older than
+the user's python.
+"""
+# Use io.open instead of open() for compatibility with python2.
+import io
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+
+USAGE = """\
+Usage:
+    bento-update-hosts init [sudoers-file-path]
+    bento-update-hosts add-entry [first-token] [second-token] [hosts-file-path]
+
+    init:
+        Installs a sudoers file (to /etc/sudoers.d/bento by default) that permits users belonging to
+        the 'bento' group to run the bento-update-hosts script as root without providing a password.
+
+    add-entry:
+        Adds a dns entry to the specified hostname. The /etc/hosts and the hosts files specified by
+        $HOSTALIASES use reversed notations for dns entries: /etc/hosts uses "$ip $hostname" while
+        $HOSTALIASES files use "$hostname $ip".
+"""
+
+
+SUDOERS_RULE_TEMPLATE = """\
+%%bento ALL = (ALL) NOPASSWD: %(script_path)s
+"""
+
+
+def _install_sudoers_rule(rule_file_path='/etc/sudoers.d/bento'):
+    """Installs sudoers rule for the bento-update-hosts script.
+
+    Args:
+        rule_file_name: The desired name for the sudoers rule file. Defaults to 'bento.sudoers'.
+    """
+    # Replace username, script-location in template.
+    script_contents = SUDOERS_RULE_TEMPLATE % dict(script_path=os.path.realpath(__file__))
+
+    with tempfile.NamedTemporaryFile(prefix=os.path.basename(rule_file_path)) as rule_file:
+        # Write the file to a temporary location.
+        rule_file.write(script_contents)
+
+        # Chmod the file to 0440.
+        os.chmod(path=rule_file, mode='0440')
+
+        # Validate the file with visudo -cf <path-to-file>.
+        assert subprocess.check_call(args=['visudo', '-cf', rule_file.name]) == 0, \
+            'Invalid sudoers file produced: %s' % script_contents
+
+        # Copy the file to (overwriting anything that was there).
+        assert subprocess.check_call(args=['cp', rule_file.name, rule_file_path]) == 0, \
+            'Failed to copy bento sudoers file to: %s' % rule_file_path
+
+    print('Installed sudoers file to: %s' % rule_file_path)
+    print('To complete setup add the current user to the "bento" group.')
+
+
+def _update_hosts(first, second, hosts_file_path):
+    """Updates a hosts file to include an entry for this bento instance.
+
+    Args:
+        first: The first token of the entry to add to the hosts file.
+        second: The second token of the entry to add to the hosts file.
+        hosts_file_path: Path to the hosts file to update.
+    """
+    if not os.path.exists(hosts_file_path):
+        original_hosts = ''
+    else:
+        with io.open(hosts_file_path, 'rt', encoding='utf-8') as hosts_file:
+            original_hosts = hosts_file.read()
+
+    # Write the hosts file to a backup file.
+    with io.open('%s.backup' % hosts_file_path, 'wt', encoding='utf-8') as backup_file:
+        backup_file.write(original_hosts)
+
+    # Replace lines.
+    first_line_pattern = re.compile('^\s*%s\s+' % first)
+    second_line_pattern = re.compile('\s*[A-Za-z0-9-_]+\s+%s\s*$' % second)
+    filtered_hosts = [
+        line
+        for line in original_hosts.splitlines()
+        if re.match(first_line_pattern, line) is None
+        and re.match(second_line_pattern, line) is None
+    ]
+    filtered_hosts.append('%s %s' % (first, second))
+
+    # Write new hosts file.
+    with io.open(hosts_file_path, 'wt', encoding='utf-8') as hosts_file:
+        hosts_file.write(os.linesep.join(filtered_hosts) + os.linesep)
+
+
+def main(args):
+    """
+    Program entry point.
+
+    Args:
+        args: Command line arguments.
+    """
+    if not len(args) >= 1:
+        print(USAGE)
+        sys.exit(os.EX_USAGE)
+
+    command = args[0]
+    command_args = args[1:]
+    command_args_count = len(command_args)
+    if command == 'init':
+        if command_args_count == 0:
+            _install_sudoers_rule()
+        if command_args_count == 1:
+            _install_sudoers_rule(command_args[0])
+        else:
+            print(USAGE)
+            sys.exit(os.EX_USAGE)
+    elif command == 'add-entry':
+        if len(command_args) == 3:
+            print(USAGE)
+            sys.exit(os.EX_USAGE)
+        _update_hosts(first=args[1], second=args[2], hosts_file_path=args[3])
+    else:
+        print(USAGE)
+        sys.exit(os.EX_USAGE)
+
+
+if __name__ == '__main__':
+    # Remove the first argument.
+    main(sys.argv[1:])

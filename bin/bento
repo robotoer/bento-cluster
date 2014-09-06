@@ -16,7 +16,7 @@ def main(args):
     this_path = os.path.realpath(os.path.abspath(sys.argv[0]))
     root_dir = os.path.dirname(os.path.dirname(this_path))
 
-    scripts_dir = os.path.join(root_dir, 'src', 'main', 'python')
+    scripts_dir = os.path.join(root_dir, 'bento-cluster', 'src', 'main', 'python')
     assert os.path.exists(scripts_dir), ('Cannot find directory: %r' % scripts_dir)
 
     # Add the bento packages to PYTHONPATH.

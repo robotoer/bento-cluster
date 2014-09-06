@@ -35,7 +35,6 @@ import json
 import logging
 import os
 import platform
-import re
 import socket
 import subprocess
 import sys
@@ -597,14 +596,24 @@ class Bento(object):
 
         # Get the full path to the update hosts script. If the package was setup correctly, this
         # script should be on the user's PATH.
-        bento_update_hosts = subprocess \
-            .check_output(args=['which', 'bento-update-hosts']) \
-            .decode('utf-8') \
-            .strip()
+        try:
+            bento_update_hosts = subprocess \
+                .check_output(args=['which', 'bento-update-hosts']) \
+                .decode('utf-8') \
+                .strip()
+        except subprocess.CalledProcessError:
+            logging.warning(
+                'Failed to locate bento-update-hosts script.'
+                'Please update your /etc/hosts file to include the following entry: "%s %s"',
+                self.bento_ip,
+                self.bento_hostname,
+            )
+            return
 
         if hosts_file_path == GLOBAL_HOSTS_FILE_PATH:
             base_args = [
                 bento_update_hosts,
+                'add-entry',
                 self.bento_ip,
                 self.bento_hostname,
                 checked_hosts_file_path
@@ -612,6 +621,7 @@ class Bento(object):
         else:
             base_args = [
                 bento_update_hosts,
+                'add-entry',
                 self.bento_hostname,
                 self.bento_ip,
                 checked_hosts_file_path
