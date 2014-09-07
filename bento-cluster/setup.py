@@ -9,7 +9,8 @@ from setuptools import setup
 def main(args):
     setup(
         name="kiji-bento-cluster",
-        version="2.0.2",
+        # TODO: Change back to 2.0.3.
+        version="2.0.4",
 
         # Lists the Python modules provided by this package:
         packages=[
@@ -24,7 +25,6 @@ def main(args):
         # Scripts to install in the bin/ folder and made available on the PATH:
         scripts=[
             "src/main/scripts/bento",
-            "src/main/scripts/bento-update-hosts",
             "src/main/scripts/create-hadoop-user",
         ],
 

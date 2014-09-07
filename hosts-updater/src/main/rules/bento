@@ -1,0 +1,1 @@
+%bento ALL = (ALL) NOPASSWD: /usr/bin/bento-update-hosts

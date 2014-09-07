@@ -610,10 +610,9 @@ class Bento(object):
             )
             return
 
-        if hosts_file_path == GLOBAL_HOSTS_FILE_PATH:
+        if checked_hosts_file_path == GLOBAL_HOSTS_FILE_PATH:
             base_args = [
                 bento_update_hosts,
-                'add-entry',
                 self.bento_ip,
                 self.bento_hostname,
                 checked_hosts_file_path
@@ -621,7 +620,6 @@ class Bento(object):
         else:
             base_args = [
                 bento_update_hosts,
-                'add-entry',
                 self.bento_hostname,
                 self.bento_ip,
                 checked_hosts_file_path
