@@ -21,6 +21,18 @@
 
 # ------------------------------------------------------------------------------
 
+# This script sets copies the update-etc-hosts script to /usr/local/bin/ and
+# writes a sudoers rule giving users belonging to the 'bento' group permission
+# to run the /usr/local/bin/update-etc-hosts script as root without providing a
+# password.
+
+# Usage:
+#
+#    $ sudo bento-setup-sudoers
+#
+
+# ------------------------------------------------------------------------------
+
 set -o nounset   # Fail when referencing undefined variables
 set -o errexit   # Script exits on the first error
 set -o pipefail  # Pipeline status failure if any command fails
@@ -74,24 +86,38 @@ function resolve_symlink() {
 
 # ------------------------------------------------------------------------------
 
+install_path="/usr/local/bin/"
+update_etc_hosts_name="update-etc-hosts"
+bento_group="bento"
+bento_sudoers_rule="%bento ALL = (ALL) NOPASSWD: ${install_path}/${update_etc_hosts_name}"
+
 bento_env_path="${BASH_SOURCE:-$0}"
 bento_env_path=$(resolve_symlink "${bento_env_path}")
 
-bento_cluster_home=$(dirname "$(dirname "${bento_env_path}")")
-bento_cluster_home=$(cd "${bento_cluster_home}"; pwd -P)
+bento_scripts_dir="$(dirname "${bento_env_path}")"
+update_etc_hosts_path="${bento_scripts_dir}/${update_etc_hosts_name}"
+bento_sudoers_rule_path="$(dirname "${bento_scripts_dir}")/rules/bento"
 
-# Linux environments obey the HOSTALIASES environment variable:
-if [[ "$(uname)" == "Linux" ]]; then
-  if [[ -z "$HOSTALIASES" ]]; then
-    echo "WARNING: The HOSTALIASES environment variable is not set." 1>&2
-    echo "WARNING: This may prevent applications from resolving the Bento host name." 1>&2
-    echo "WARNING: Please update your bash configuration and add: " 1>&2
-    echo "WARNING:     export HOSTALIASES=${HOME}/.hosts" 1>&2
-
-    # Make sure the file exists
-    touch "${HOME}/.hosts"
-    export HOSTALIASES="${HOME}/.hosts"
-  fi
+if [ ! -f ${update_etc_hosts_path} ]; then
+  echo "Unable to find update-etc-hosts script at: ${update_etc_hosts_path}"
+  exit 1;
 fi
 
-export PATH="${bento_cluster_home}/bin:${PATH}"
+# Copy the update-etc-hosts script to /usr/local/bin/.
+cp "${update_etc_hosts_path}" "${install_path}"
+
+# Validate the bento sudoers rule.
+temp=$(mktemp /tmp/bento.sudoers.tmp.XXXXXX)
+bento_sudoers_rule
+visudo -cf "${temp}"
+
+# Copy the bento sudoers rule to /etc/sudoers.d/.
+
+# Check to see if /etc/sudoers has a #includedir /etc/sudoers.d/ directive.
+# Print warning if not.
+
+# --- MAC-SPECIFIC SECTION NEEDED ---
+# Create a bento group.
+
+# Add the current user to the bento group.
+# Warn the user that they need to get a new session to see group add effects.

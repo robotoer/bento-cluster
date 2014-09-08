@@ -603,7 +603,7 @@ class Bento(object):
                 .strip()
         except subprocess.CalledProcessError:
             logging.warning(
-                'Failed to locate bento-update-hosts script.'
+                'Failed to locate bento-update-hosts script. '
                 'Please update your /etc/hosts file to include the following entry: "%s %s"',
                 self.bento_ip,
                 self.bento_hostname,

@@ -7,6 +7,11 @@ A prototype for a Bento cluster (self contained HDFS/YARN/HBase/Cassandra enviro
 The Bento Cluster can be installed using pip:
 
     pip3 install kiji-bento-cluster
+    
+To support running the bento-cluster as non-root without using `$HOSTALIASES` install
+kiji-bento-hosts-updater as root using pip:
+
+    sudo pip install kiji-bento-hosts-updater
 
 ## Usage
 
